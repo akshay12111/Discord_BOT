@@ -1,5 +1,4 @@
 import discord
-# import os
 import requests
 import json
 import random
@@ -7,6 +6,8 @@ from replit import db
 from keep_alive import keep_alive
 
 client = discord.Client()
+meme_api = "https://meme-api.herokuapp.com/gimme"
+nsfw_filter = True
 
 sad_words = ["sad", "depressed", "unhappy","angry", "depressing", "hurting", "gloomy", "lonely", "hardworking", "hopeless", "grieved", "dissappointed", "disappointing", "lost"]
 
@@ -27,6 +28,15 @@ def get_quote():
   json_data = json.loads(response.text)
   quote = json_data[0]['q'] + " -" + json_data[0]['a']
   return(quote)
+
+@client.event
+async def meme(msg):
+  response = requests.request("GET",meme_api)
+  json_data = response.json()
+  img_url = json_data["url"]
+  if nsfw_filter and json_data['nsfw']:
+    print("NSFW Found!")
+    return await meme(msg)
 
 def update_encouragements(encouraging_message):
   if "encouragements" in db.keys():
@@ -52,6 +62,9 @@ async def on_message(message):
     return
 
   msg = message.content
+
+  if msg.startswith("$meme"):
+    await meme(msg)
 
   if msg.startswith('$inspire'):
     quote = get_quote()
@@ -93,6 +106,9 @@ async def on_message(message):
     else:
       db["responding"] = False
       await message.channel.send("Responding is off.")
+
+
+
 
 keep_alive()
 client.run('OTM0NDI2ODgyMDQzMTcwODc2.Yev62Q.8Pop0GC6Eface_Qo1lFP3H-SLYo')
